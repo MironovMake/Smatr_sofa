@@ -21,6 +21,12 @@ RTC_DS1307 rtc;
 int NumberInputs = 3;
 int button[3] = {24, 25, 27};
 int SensorDate[5];
+// encoder
+#include "GyverEncoder.h"
+#define CLK D5
+#define DT D6
+#define SW D4
+Encoder enc1(CLK, DT, SW);
 
 // bobbers
 int NumberBobber = 4;
@@ -101,6 +107,7 @@ void LCD_init()
   lcd.setCursor(0, 0);
   lcd.print("Mironov");
 }
+
 void setup()
 {
   LCD_init();
@@ -120,11 +127,8 @@ void setup()
 void loop()
 {
   //  TimeReqest();
-  myStepper.step(2000);
-  delay(2000);
-  // Step on revolution in the other direction:
-  myStepper.step(-2000);
-  delay(2000);
+  //myStepper.step(-2000);
+
   delay(100);
   BobberRequest();
   for (int i = 0; i < NumberRelay; i++)
