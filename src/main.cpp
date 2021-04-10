@@ -2,29 +2,29 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <OneWire.h>
-#define SCK D1
-#define DOUT D2
 #include <Wire.h>
 unsigned long prev;
-int flag;
-
-// WIFI ADJUST
-#include <WiFiAdjust.h>
+int Internet_flag = 0;
+int change;
 
 // Master Adjust
 #define SLAVE_ADDR 9
 bool MasterFlag = 0;
-int SlavePin = D3;
+uint8_t SlavePin = 12; // its D6
 int bcount;
 const int leng = 165;
 int CurrentSensorState[leng];
 unsigned long jsd;
-int trans = 0;
+bool Mega_listen = 0;
 const int OutputNumber = 30;
 const int rows = OutputNumber;
 const int columns = 4;
 int TimeDevice[rows][columns];
 int n;
+bool FirstTimeFlag = 1;
+
+// WIFI ADJUST
+#include <WiFiAdjust.h>
 
 byte readI2C(int address)
 {
@@ -45,45 +45,69 @@ byte readI2C(int address)
 void setup()
 {
   pinMode(SlavePin, INPUT);
-  // Initialize SPIFFS
+  // Initialize LittleFS
+
   WiFiSetup();
   Wire.begin(D1, D2); /* задаем i2c мост через контакты SDA=D1 и SCL=D2 на NodeMCU */
   Serial.print("my fuck time  ");
-  delay(500);
+  delay(2500);
 }
 
 void loop()
 {
-  // To access
-  if (millis() - prev > 15000)
+  Mega_listen = digitalRead(SlavePin);
+  // Serial.println(Mega_listen);
+  //when Mega want to Mega_listenlate some date
+  if (Mega_listen == 1 && FirstTimeFlag == 0)
   {
-    Serial.println("Send to internet");
-    flag = 1;
-    prev = millis();
-    for (int i = 0; i < mat; i++)
-    {
-      writeFile(SPIFFS, files[i], String(CurrentSensorState[i]));
-    }
-  }
-  trans = digitalRead(SlavePin);
-  // Serial.println(trans);
-  if (trans == 1)
-  {
+    Serial.println("I am getting date from Mega");
+    // get date
     while (readI2C(SLAVE_ADDR) < 255)
     {
-      // Until first byte has been received print a waiting message
       Serial.print("Waiting");
     }
     for (bcount = 0; bcount < leng; bcount++)
     {
       CurrentSensorState[bcount] = readI2C(SLAVE_ADDR);
     }
+    // save date to files, than post ones in internet
     for (int i = 0; i < leng; i++)
     {
-      Serial.print(CurrentSensorState[i]);
       Serial.print(" ");
+      Serial.print(CurrentSensorState[i]);
+      SendingValueToString(i, CurrentSensorState[i]);
     }
+    writeFile(LittleFS, MyFile, GeneralString);
     Serial.println();
-    delay(200);
+    Serial.println("I success get date from slave");
+    //Serial.println(GeneralString);
+    //delay(50);
   }
+
+  // send date to Mega
+  if (Internet_flag == 1 || FirstTimeFlag == 1)
+  {
+    if (Internet_flag)
+      Serial.println("Something happening in internet");
+    if (FirstTimeFlag)
+      Serial.println("I send date becouse start first time");
+    writeFile(LittleFS, MyFile, GeneralString);
+    //Serial.println(GeneralString);
+    for (int i = 0; i < leng; i++)
+    {
+      // Write a charatre to the Slave
+      Serial.print(" ");
+      Serial.print(CurrentSensorState[i]);
+      Wire.beginTransmission(SLAVE_ADDR);
+      Wire.write(CurrentSensorState[i]);
+      Wire.endTransmission();
+      //delay(50);
+    }
+    //Serial.print(GeneralString);
+    Serial.println();
+    Serial.println("I sended data to mega");
+    Internet_flag = 0;
+    FirstTimeFlag = 0;
+  }
+  //Serial.println("eher");
 }
