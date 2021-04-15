@@ -6,13 +6,13 @@
 unsigned long prev;
 int Internet_flag = 0;
 int change;
-
+int m;
 // Master Adjust
 #define SLAVE_ADDR 9
 bool MasterFlag = 0;
 uint8_t SlavePin = 12; // its D6
 int bcount;
-const int leng = 165;
+const int leng = 201;
 int CurrentSensorState[leng];
 unsigned long jsd;
 bool Mega_listen = 0;
@@ -76,6 +76,7 @@ void loop()
       Serial.print(" ");
       Serial.print(CurrentSensorState[i]);
       SendingValueToString(i, CurrentSensorState[i]);
+      events.send(String(CurrentSensorState[i]).c_str(), parametr[i], millis());
     }
     writeFile(LittleFS, MyFile, GeneralString);
     Serial.println();
@@ -88,10 +89,17 @@ void loop()
   if (Internet_flag == 1 || FirstTimeFlag == 1)
   {
     if (Internet_flag)
+    {
       Serial.println("Something happening in internet");
+      (change == 168) ? m = 18 : m = 4;
+      for (int i = change - m; i < change; i++)
+      {
+        SendingValueToString(i, CurrentSensorState[i]);
+      }
+      writeFile(LittleFS, MyFile, GeneralString);
+    }
     if (FirstTimeFlag)
       Serial.println("I send date becouse start first time");
-    writeFile(LittleFS, MyFile, GeneralString);
     //Serial.println(GeneralString);
     for (int i = 0; i < leng; i++)
     {
