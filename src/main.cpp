@@ -21,7 +21,7 @@ const int rows = OutputNumber;
 const int columns = 4;
 int TimeDevice[rows][columns];
 int n;
-bool FirstTimeFlag = 1;
+bool FirstTimeFlag = 0;
 
 // WIFI ADJUST
 #include <WiFiAdjust.h>
@@ -55,9 +55,9 @@ void setup()
 
 void loop()
 {
-  Mega_listen = digitalRead(SlavePin);
+  //Mega_listen = digitalRead(SlavePin);
   // Serial.println(Mega_listen);
-  //when Mega want to Mega_listenlate some date
+  //when Mega want to translate some date
   if (Mega_listen == 1 && FirstTimeFlag == 0)
   {
     Serial.println("I am getting date from Mega");
@@ -91,11 +91,6 @@ void loop()
     if (Internet_flag)
     {
       Serial.println("Something happening in internet");
-      (change == 168) ? m = 18 : m = 4;
-      for (int i = change - m; i < change; i++)
-      {
-        SendingValueToString(i, CurrentSensorState[i]);
-      }
       writeFile(LittleFS, MyFile, GeneralString);
     }
     if (FirstTimeFlag)

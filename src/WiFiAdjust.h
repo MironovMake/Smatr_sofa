@@ -32,7 +32,7 @@ String GeneralString;
 const char *MyFile = {"/MyFile.txt"};
 String TemporaryFile1;
 String TemporaryFile2;
-bool InitFlag=0;
+bool InitFlag = 0;
 const char *parametr[leng] = {
     "HOUR", "MIN", "TEMP", "LEAK", "LIGHT",
     "BOBBER1", "BOBBER2", "BOBBER3", "BOBBER4",
@@ -780,7 +780,6 @@ String processor2(const String &var)
     {
       TemporaryFile1 = parametr[j];
       TemporaryFile2 = "";
-      //Serial.println(TemporaryFile2);
       if (j != leng - 1)
       {
         for (int i = GeneralString.indexOf(parametr[j]) + TemporaryFile1.length(); i < GeneralString.indexOf(parametr[j + 1]); i++)
@@ -805,7 +804,6 @@ String GettingValueFromString(int j)
 {
   TemporaryFile1 = parametr[j];
   TemporaryFile2 = "";
-  //Serial.println(TemporaryFile1);
   if (j != leng - 1)
   {
     for (int i = GeneralString.indexOf(parametr[j]) + TemporaryFile1.length(); i < GeneralString.indexOf(parametr[j + 1]); i++)
@@ -818,10 +816,8 @@ String GettingValueFromString(int j)
     for (int i = GeneralString.indexOf(parametr[j]) + TemporaryFile1.length(); i < GeneralString.length(); i++)
     {
       TemporaryFile2 += GeneralString[i];
-      //Serial.println(TemporaryFile2);
     }
   }
-  //Serial.println(TemporaryFile2);
   return TemporaryFile2;
 }
 
@@ -829,7 +825,6 @@ void SendingValueToString(int j, int k)
 {
   TemporaryFile1 = parametr[j];
   TemporaryFile2 = "";
-  Serial.println(TemporaryFile1);
   if (j != leng - 1)
   {
     for (int i = GeneralString.indexOf(parametr[j]) + TemporaryFile1.length(); i < GeneralString.indexOf(parametr[j + 1]); i++)
@@ -842,7 +837,6 @@ void SendingValueToString(int j, int k)
     for (int i = GeneralString.indexOf(parametr[j]) + TemporaryFile1.length(); i < GeneralString.length(); i++)
     {
       TemporaryFile2 += GeneralString[i];
-      //Serial.println(TemporaryFile2);
     }
   }
   GeneralString.replace(parametr[j] + TemporaryFile2, parametr[j] + String(k));
@@ -856,7 +850,7 @@ void WiFiSetup()
   Serial.println(F("Inizializing FS..."));
 
   (LittleFS.begin()) ? Serial.println(F("done.")) : Serial.println(F("fail."));
-
+  /*
   GeneralString = readFile(LittleFS, MyFile);
   for (int j = 0; j < leng; j++)
   {
@@ -865,17 +859,18 @@ void WiFiSetup()
   }
   if (InitFlag)
   {
-    for (int i = 0; i < leng; i++)
-    {
-      CurrentSensorState[i] = 0;
-      GeneralString += parametr[i] + String(CurrentSensorState[i]);
-    }
+    */
+  for (int i = 0; i < leng; i++)
+  {
+    CurrentSensorState[i] = 0;
+    GeneralString += parametr[i] + String(CurrentSensorState[i]);
+  }
+  /*
     Serial.println("GeneralString succes initialize");
   }
   else
     Serial.println("GeneralString already exist");
-  
-  
+*/
   AsyncWiFiManager wifiManager(&server, &dns);
   wifiManager.autoConnect("AutoConnectAP");
   Serial.println("connected...yeey :)");
@@ -887,22 +882,36 @@ void WiFiSetup()
 
   server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
     String inputMessage;
-    for (int i = 14; i < leng - 4; i++)
+    Serial.print("inputMessage  ");
+    Serial.println(inputMessage);
+
+    for (int i = 14; i < leng; i++)
     {
-      if (request->hasParam(parametr[i]))
+      if (request->hasParam(parametr[i]) && i < leng - 4)
       {
         inputMessage = request->getParam(parametr[i])->value();
         CurrentSensorState[i] = inputMessage.substring(0, 2).toInt();
         SendingValueToString(i, CurrentSensorState[i]);
+        /*Serial.print("CurrentSensorState[");
+        Serial.print(i);
+        Serial.print("]  ");
+        Serial.println(CurrentSensorState[i]);*/
         i++;
         CurrentSensorState[i] = inputMessage.substring(3, 5).toInt();
         SendingValueToString(i, CurrentSensorState[i]);
-        change = i;
+        /*Serial.print("CurrentSensorState[");
+        Serial.print(i);
+        Serial.print("]  ");
+        Serial.println(CurrentSensorState[i]);*/
       }
-      else if (i >= leng - 4)
+      else if (request->hasParam(parametr[i]) && i >= leng - 4)
       {
+        inputMessage = request->getParam(parametr[i])->value();
         CurrentSensorState[i] = inputMessage.toInt();
         SendingValueToString(i, CurrentSensorState[i]);
+        /*Serial.print("CurrentSensorState[");
+        Serial.print(i);
+        Serial.print("]  ");*/
       }
       if (!Internet_flag)
         Internet_flag = 1;
