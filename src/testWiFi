@@ -89,7 +89,6 @@ const char *parametr[leng] = {
     "StartMonth", "StartDay", "StartHour", "StartMin",
     "watering", "irrigation", "begin", "cycle",
     "TankFlag", "CycleDay", "CycleHour",
-    //from 177
     "IrrigationMix", "WateringMix",
 
     "STEP1_value", "STEP2_value", "STEP3_value", "STEP4_value", "key"}; // corner to turn
@@ -614,7 +613,8 @@ let  saf=[
 </script>
 </body>
 
-</html>)rawliteral";
+</html>
+)rawliteral";
 
 void notFound(AsyncWebServerRequest *request)
 {
@@ -733,34 +733,35 @@ void SendingValueToString(int j, int k)
             TemporaryFile2 += GeneralString[i];
         }
     }
-    GeneralString.replace(parametr[j]+TemporaryFile2,parametr[j]+String(k));
+    GeneralString.replace(parametr[j] + TemporaryFile2, parametr[j] + String(k));
 }
 
 void WiFiSetup()
 {
+    Serial.begin(115200);
     Serial.println("ESP8266 INIT");
     Serial.println(F("Inizializing FS..."));
+
     (LittleFS.begin()) ? Serial.println(F("done.")) : Serial.println(F("fail."));
-    /*
-    for (int i = 0; i < leng; i++)
-    {
-        GeneralString += parametr[i] + String(2);
-    }
-    GeneralString += parametr[leng-1] + String(254);
-    writeFile(LittleFS, MyFile, GeneralString);
-    */
     GeneralString = readFile(LittleFS, MyFile);
+    //if (GeneralString = "")
+    /* 
     for (int i = 0; i < leng; i++)
     {
+        CurrentSensorState[i] = 0;
         PreviousSensorState[i] = 0;
-        InternetSensorState[i] = 0;
-        CurrentSensorState[i] = GettingValueFromString(i).toInt();
     }
-    Serial.println("GeneralString ");
-    Serial.println(GeneralString);
+    CurrentSensorState[leng - 1] = 254;
+    for (int i = 0; i < leng; i++)
+    {
+        GeneralString += parametr[i] + String(CurrentSensorState[i]);
+    }
+*/
     AsyncWiFiManager wifiManager(&server, &dns);
     wifiManager.autoConnect("AutoConnectAP");
     Serial.println("connected...yeey :)");
+    Serial.println(WiFi.localIP());
+    Serial.println(";");
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send_P(200, "text/html", index_html, processor2); });
     // Send a GET request to <ESP_IP>/get?ENC=<inputMessage>
@@ -773,18 +774,18 @@ void WiFiSetup()
                       if (request->hasParam(parametr[i]) && i < 169 && i != 165)
                       {
                           inputMessage = request->getParam(parametr[i])->value();
-                          InternetSensorState[i] = inputMessage.substring(0, 2).toInt();
-                          SendingValueToString(i, InternetSensorState[i]);
-                          i++;
-                          InternetSensorState[i] = inputMessage.substring(3, 5).toInt();
-                          SendingValueToString(i, InternetSensorState[i]);
-                      }
+                          CurrentSensorState[i] = inputMessage.substring(0, 2).toInt();
+                          SendingValueToString(i, CurrentSensorState[i]);
+                                     i++;
+                          CurrentSensorState[i] = inputMessage.substring(3, 5).toInt();
+                          SendingValueToString(i, CurrentSensorState[i]);
+                               }
                       else if (request->hasParam(parametr[i]) && i >= 169 && i != 172)
                       {
                           inputMessage = request->getParam(parametr[i])->value();
-                          InternetSensorState[i] = inputMessage.toInt();
-                          SendingValueToString(i, InternetSensorState[i]);
-                      }
+                          CurrentSensorState[i] = inputMessage.toInt();
+                          SendingValueToString(i, CurrentSensorState[i]);
+                           }
                       else if (request->hasParam(parametr[i]) && i == 165)
                       {
                           inputMessage = request->getParam(parametr[i])->value();
@@ -792,27 +793,27 @@ void WiFiSetup()
                           {
                               inputMessage = inputMessage.substring(inputMessage.length() - 16, 18);
                           }
-                          InternetSensorState[i] = inputMessage.substring(5, 7).toInt();
-                          SendingValueToString(i, InternetSensorState[i]);
-                          i++;
-                          InternetSensorState[i] = inputMessage.substring(8, 11).toInt();
-                          SendingValueToString(i, InternetSensorState[i]);
-                          i++;
-                          InternetSensorState[i] = inputMessage.substring(11, 14).toInt();
-                          SendingValueToString(i, InternetSensorState[i]);
-                          i++;
-                          InternetSensorState[i] = inputMessage.substring(14, 17).toInt();
-                          SendingValueToString(i, InternetSensorState[i]);
-                      }
+                          CurrentSensorState[i] = inputMessage.substring(5, 7).toInt();
+                          SendingValueToString(i, CurrentSensorState[i]);
+                                 i++;
+                          CurrentSensorState[i] = inputMessage.substring(8, 11).toInt();
+                          SendingValueToString(i, CurrentSensorState[i]);
+                               i++;
+                          CurrentSensorState[i] = inputMessage.substring(11, 14).toInt();
+                          SendingValueToString(i, CurrentSensorState[i]);
+                                    i++;
+                          CurrentSensorState[i] = inputMessage.substring(14, 17).toInt();
+                          SendingValueToString(i, CurrentSensorState[i]);
+                                     }
                       if (request->hasParam(parametr[i]) && i == 172)
                       {
                           inputMessage = request->getParam(parametr[i])->value();
-                          InternetSensorState[175] = inputMessage.toInt() % 24;
-                          InternetSensorState[174] = (inputMessage.toInt() - InternetSensorState[175]) / 24;
-                          SendingValueToString(174, InternetSensorState[174]);
-                          SendingValueToString(175, InternetSensorState[175]);
-                          SendingValueToString(172, InternetSensorState[174] * 24 + InternetSensorState[175]);
-                          events.send(String(InternetSensorState[174] * 24 + InternetSensorState[175]).c_str(), parametr[172], millis());
+                                  CurrentSensorState[175] = inputMessage.toInt() % 24;
+                          CurrentSensorState[174] = (inputMessage.toInt() - CurrentSensorState[175]) / 24;
+                               SendingValueToString(174, CurrentSensorState[174]);
+                          SendingValueToString(175, CurrentSensorState[175]);
+                          SendingValueToString(172, CurrentSensorState[174] * 24 + CurrentSensorState[175]);
+                          events.send(String(CurrentSensorState[174] * 24 + CurrentSensorState[175]).c_str(), parametr[172], millis());
                       }
                       if (!Internet_flag)
                           Internet_flag = 1;

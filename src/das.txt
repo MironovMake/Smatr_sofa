@@ -15,14 +15,11 @@ int bcount;
 const int leng = 183;
 int CurrentSensorState[leng];
 int PreviousSensorState[leng];
-int InternetSensorState[leng];
-unsigned long OutOffHere;
+
 bool Mega_listen = 0;
 int n;
 bool FirstTimeFlag = 1;
 byte bval;
-unsigned long frecu;
-unsigned long LastTimeGeting;
 // WIFI ADJUSTs
 #include <WiFiAdjust.h>
 String adr;
@@ -43,25 +40,25 @@ byte readI2C(int address)
 
 void setup()
 {
-  Serial.begin(115200);
-  Serial.println("ESP8266 INIT");
-  Serial.println(F("Inizializing FS..."));
   pinMode(SlavePin, INPUT);
   // Initialize LittleFS
   WiFiSetup();
   Wire.begin(D1, D2); /* задаем i2c мост через контакты SDA=D1 и SCL=D2 на NodeMCU */
-
+  Serial.print("my fuck time  ");
+  delay(2500);
   Serial.println(WiFi.localIP());
-  Serial.println(WiFi.localIP());
-
   adr = WiFi.localIP().toString();
-  //передача IP адреса при включении
+  Serial.print("adress  ");
+  Serial.print(adr);
+  Serial.print( "  adr.length()  ");
+  Serial.println( adr.length());
   for (int i = 0; i < adr.length(); i++)
   {
     Wire.beginTransmission(SLAVE_ADDR);
-    bval = adr[i];
+    bval= adr[i];
     Wire.write(bval);
     Wire.endTransmission();
+    Serial.print(adr[i]);
   }
   Wire.beginTransmission(SLAVE_ADDR);
   CurrentSensorState[leng - 1] = 254;
@@ -72,17 +69,15 @@ void setup()
 void loop()
 {
   Mega_listen = digitalRead(SlavePin);
-  if (Mega_listen == 1 && millis() - frecu > 1000)
+  if (Mega_listen == 1)
   {
-    frecu = millis();
     Serial.println("I am getting date from Mega");
     // get date
-    OutOffHere = millis();
-    while (readI2C(SLAVE_ADDR) < 255) //&& (millis() - OutOffHere) < 100
+    while (readI2C(SLAVE_ADDR) < 255)
     {
-      Serial.print("STUCK");
+      Serial.print("Waiting");
     }
-    for (bcount = 0; bcount < leng + 1; bcount++)
+    for (bcount = 0; bcount < leng+1; bcount++)
     {
       CurrentSensorState[bcount] = readI2C(SLAVE_ADDR);
       if (CurrentSensorState[bcount] == 255)
@@ -108,23 +103,23 @@ void loop()
         events.send(String(CurrentSensorState[174] * 24 + CurrentSensorState[175]).c_str(), parametr[172], millis());
         PreviousSensorState[i] = CurrentSensorState[i];
       }
-      LastTimeGeting = millis();
     }
 
     writeFile(LittleFS, MyFile, GeneralString);
     Serial.println();
     Serial.println("I success get date from slave");
   }
-  //Serial.println(millis()-LastTimeGeting);
+
   // send date to Mega
-  if ((Internet_flag == 1 && (millis() - LastTimeGeting) < 58000) || FirstTimeFlag)
+  if (Internet_flag == 1 || FirstTimeFlag)
   {
     if (Internet_flag)
     {
-      Serial.println();
       Serial.println("Something happening in internet");
       writeFile(LittleFS, MyFile, GeneralString);
     }
+    if (FirstTimeFlag)
+      Serial.println("I send date becouse start first time");
     byte bval;
     bval = 255; // send key-start
     Wire.beginTransmission(SLAVE_ADDR);
@@ -132,12 +127,8 @@ void loop()
     Wire.endTransmission();
     for (int i = 0; i < leng; i++)
     {
-      if (InternetSensorState[i] != CurrentSensorState[i] || (FirstTimeFlag && PreviousSensorState[i] != CurrentSensorState[i]))
+      if (PreviousSensorState[i] != CurrentSensorState[i])
       {
-        if (!FirstTimeFlag)
-          CurrentSensorState[i] = InternetSensorState[i];
-        else
-          PreviousSensorState[i] = CurrentSensorState[i];
         bval = i;
         Wire.beginTransmission(SLAVE_ADDR);
         Wire.write(bval);
@@ -159,7 +150,6 @@ void loop()
     Serial.println("I sended data to mega");
     Internet_flag = 0;
     FirstTimeFlag = 0;
-    delay(500);
   }
   //Serial.println("eher");
 }
