@@ -15,6 +15,7 @@ int bcount;
 const int leng = 183;
 int CurrentSensorState[leng];
 int PreviousSensorState[leng];
+int buffer[leng];
 int InternetSensorState[leng];
 unsigned long OutOffHere;
 bool Mega_listen = 0;
@@ -26,15 +27,18 @@ unsigned long LastTimeGeting;
 // WIFI ADJUSTs
 #include <WiFiAdjust.h>
 String adr;
+
 byte readI2C(int address)
 {
   // Define a variable to hold byte of data
+  byte bval;
   long entry = millis();
   // Read one byte at a time
   Wire.requestFrom(address, 1);
   // Wait 100 ms for data to stabilize
   while (Wire.available() == 0 && (millis() - entry) < 100)
-    Serial.print("Waiting");
+    ;
+  ;
   // Place data into byte
   if (millis() - entry < 100)
     bval = Wire.read();
@@ -71,48 +75,57 @@ void setup()
 
 void loop()
 {
-  Mega_listen = digitalRead(SlavePin);
-  if (Mega_listen == 1 && millis() - frecu > 1000)
+  if (millis() - frecu > 5000)
   {
     frecu = millis();
     Serial.println("I am getting date from Mega");
     // get date
-    OutOffHere = millis();
-    while (readI2C(SLAVE_ADDR) < 255) //&& (millis() - OutOffHere) < 100
+
+    while (readI2C(SLAVE_ADDR) < 255)
     {
-      Serial.print("STUCK");
+      // Until first byte has been received print a waiting message
+      Serial.print("Waiting");
     }
-    for (bcount = 0; bcount < leng + 1; bcount++)
+    bcount = 0;
+    while (buffer[bcount - 1] != 254)
     {
-      CurrentSensorState[bcount] = readI2C(SLAVE_ADDR);
-      if (CurrentSensorState[bcount] == 255)
-        bcount--;
-      Serial.print(CurrentSensorState[bcount]);
+      buffer[bcount] = readI2C(SLAVE_ADDR);
+      Serial.print(buffer[bcount]);
+      Serial.print(" ");
+      bcount++;
+    }
+
+    Serial.println();
+    for (int i = 0; i < bcount - 1; i = i + 2)
+    {
+      CurrentSensorState[buffer[i]] = buffer[i + 1];
+      Serial.print(CurrentSensorState[buffer[i]]);
       Serial.print(" ");
     }
+    Serial.println();
 
     // save date to files, than post ones in internet
     for (int i = 0; i < leng; i++)
     {
-      Serial.print(" ");
-      Serial.print(CurrentSensorState[i]);
+      //Serial.print(" ");
+      // Serial.print(CurrentSensorState[i]);
       if (CurrentSensorState[i] != PreviousSensorState[i] && i != 174 && i != 175)
       {
+        PreviousSensorState[i] = CurrentSensorState[i];
         SendingValueToString(i, CurrentSensorState[i]);
         events.send(String(CurrentSensorState[i]).c_str(), parametr[i], millis());
-        PreviousSensorState[i] = CurrentSensorState[i];
       }
       if (CurrentSensorState[i] != PreviousSensorState[i] && (i == 174 || i == 175))
       {
+        PreviousSensorState[i] = CurrentSensorState[i];
         SendingValueToString(i, CurrentSensorState[i]);
         events.send(String(CurrentSensorState[174] * 24 + CurrentSensorState[175]).c_str(), parametr[172], millis());
-        PreviousSensorState[i] = CurrentSensorState[i];
       }
       LastTimeGeting = millis();
     }
 
+    //Serial.println(GeneralString);
     writeFile(LittleFS, MyFile, GeneralString);
-    Serial.println();
     Serial.println("I success get date from slave");
   }
   //Serial.println(millis()-LastTimeGeting);

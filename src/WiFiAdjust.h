@@ -733,7 +733,7 @@ void SendingValueToString(int j, int k)
             TemporaryFile2 += GeneralString[i];
         }
     }
-    GeneralString.replace(parametr[j]+TemporaryFile2,parametr[j]+String(k));
+    GeneralString.replace(parametr[j] + TemporaryFile2, parametr[j] + String(k));
 }
 
 void WiFiSetup()
@@ -741,15 +741,17 @@ void WiFiSetup()
     Serial.println("ESP8266 INIT");
     Serial.println(F("Inizializing FS..."));
     (LittleFS.begin()) ? Serial.println(F("done.")) : Serial.println(F("fail."));
-    /*
-    for (int i = 0; i < leng; i++)
-    {
-        GeneralString += parametr[i] + String(2);
-    }
-    GeneralString += parametr[leng-1] + String(254);
-    writeFile(LittleFS, MyFile, GeneralString);
-    */
+
     GeneralString = readFile(LittleFS, MyFile);
+
+    GeneralString="";
+        for (int i = 0; i < leng-1; i++)
+        {
+            GeneralString += parametr[i] + String(2);
+        }
+        GeneralString += parametr[leng - 1] + String(254);
+        writeFile(LittleFS, MyFile, GeneralString);
+
     for (int i = 0; i < leng; i++)
     {
         PreviousSensorState[i] = 0;
